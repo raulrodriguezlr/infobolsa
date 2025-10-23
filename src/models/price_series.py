@@ -20,26 +20,52 @@ class PriceSeries:
     data: List[PricePoint] = field(default_factory=list)
 
     def mean(self):
-        closes = [p.close for p in self.data]
-        return statistics.mean(closes) if closes else float('nan')
+        """
+        Calcula la media de los precios de cierre de la serie.
+        """
+        closes = []
+        for p in self.data:
+            closes.append(p.close)
+        if closes:
+            return statistics.mean(closes)
+        return float('nan')
 
     def stdev(self):
-        closes = [p.close for p in self.data]
-        return statistics.stdev(closes) if len(closes) > 1 else float('nan')
+        """
+        Calcula la desviación típica de los precios de cierre de la serie.
+        """
+        closes = []
+        for p in self.data:
+            closes.append(p.close)
+        if len(closes) > 1:
+            return statistics.stdev(closes)
+        return float('nan')
 
     def clean(self):
-        """Elimina puntos con valores no válidos y ordena por fecha."""
-        self.data = [p for p in self.data if not math.isnan(p.close)]
+        """
+        Elimina puntos con valores no válidos y ordena la serie por fecha.
+        """
+        cleaned = []
+        for p in self.data:
+            if not math.isnan(p.close):
+                cleaned.append(p)
+        self.data = cleaned
         self.data.sort(key=lambda p: p.date)
 
     def total_return(self):
-        """Rendimiento total de la serie."""
+        """
+        Calcula el rendimiento total de la serie (último cierre / primer cierre - 1).
+        """
         if len(self.data) < 2:
             return float('nan')
-        return (self.data[-1].close / self.data[0].close) - 1
+        first = self.data[0].close
+        last = self.data[-1].close
+        return (last / first) - 1
 
     def annualized_return(self):
-        """Rendimiento anualizado."""
+        """
+        Calcula el rendimiento anualizado de la serie.
+        """
         if len(self.data) < 2:
             return float('nan')
         days = (self.data[-1].date - self.data[0].date).days
@@ -49,16 +75,26 @@ class PriceSeries:
         return total_ret ** (365 / days) - 1
 
     def volatility(self):
-        """Volatilidad anualizada (desviación típica de los rendimientos diarios)."""
+        """
+        Calcula la volatilidad anualizada de la serie usando los rendimientos logarítmicos diarios.
+        """
         if len(self.data) < 2:
             return float('nan')
-        returns = [math.log(self.data[i].close / self.data[i-1].close) for i in range(1, len(self.data)) if self.data[i-1].close > 0]
+        returns = []
+        for i in range(1, len(self.data)):
+            prev = self.data[i-1].close
+            curr = self.data[i].close
+            if prev > 0:
+                log_ret = math.log(curr / prev)
+                returns.append(log_ret)
         if len(returns) < 2:
             return float('nan')
         return statistics.stdev(returns) * math.sqrt(252)
 
     def max_drawdown(self):
-        """Máximo drawdown de la serie."""
+        """
+        Calcula el máximo drawdown (caída máxima desde un máximo anterior) de la serie.
+        """
         if not self.data:
             return float('nan')
         max_close = -float('inf')
