@@ -66,3 +66,33 @@ Consulta el archivo `diagrams/architecture.fossflow` para ver la estructura gene
 Raul R.
 
 ---
+
+## **FLUJO**
+
+```mermaid
+flowchart TD
+    Start([Inicio: main.py])
+    Extractor[Descarga de datos\n(GeneralExtractor)]
+    PriceSeries[Normalización\n(PriceSeries)]
+    Portfolio[Cartera\n(Portfolio)]
+    Simulacion[Simulación Monte Carlo\n(MonteCarloSimulator)]
+    Reporte[Reporte y Análisis\n(Portfolio.report)]
+    Plots[Visualización\n(plots_report, matplotlib)]
+    Salida[Salidas: Markdown, Gráficos, Consola]
+
+    Start --> Extractor
+    Extractor --> PriceSeries
+    PriceSeries --> Portfolio
+    Portfolio --> Simulacion
+    Simulacion --> Plots
+    Portfolio --> Reporte
+    Reporte --> Salida
+    Plots --> Salida
+```
+
+- **Punto de partida:** `main.py`
+- **Flujo:** Descarga datos → Normaliza → Crea cartera → Simula → Reporta y visualiza
+- **Salidas:**
+    - Reporte en consola (markdown)
+    - Gráficos interactivos (matplotlib pop-up)
+    - Mensajes informativos
