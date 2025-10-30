@@ -2,7 +2,7 @@
 Simulación de Monte Carlo para series de precios y carteras.
 """
 import numpy as np
-from models.price_series import PriceSeries
+from src.models.price_series import PriceSeries
 
 class MonteCarloSimulator:
     """

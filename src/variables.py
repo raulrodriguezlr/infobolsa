@@ -1,3 +1,7 @@
+from typing import Dict, List
+import os
+from dotenv import load_dotenv
+
 """
 Variables y configuración comunes para los extractores de datos.
 
@@ -11,8 +15,12 @@ Este archivo pretende centralizar la configuración para facilitar añadir nuevo
 sin repetir constantes por todo el proyecto.
 """
 
-from typing import Dict, List
-import os
+
+# Fechas globales para extracción de datos
+START_DATE = os.getenv("START_DATE", "2022-01-01")
+END_DATE = os.getenv("END_DATE", "2023-12-31")
+
+load_dotenv()
 
 # Constantes generales
 TRADING_DAYS_PER_YEAR = 252
@@ -21,7 +29,7 @@ DEFAULT_CURRENCY = "USD"
 REQUEST_TIMEOUT = 10  # segundos
 REQUEST_RETRIES = 3
 REQUEST_BACKOFF_FACTOR = 0.3  # usado si se implementa retry
-
+SYMBOLS = ["AAPL", "MSFT"]
 # Nombres de variables de entorno para API keys
 API_ENV_VARS = {
     "ALPHAVANTAGE": "ALPHAVANTAGE_API_KEY",
@@ -137,8 +145,22 @@ DATA_SOURCES: List[Dict] = [
         "base_url": "https://api.stlouisfed.org/fred",
         "historical_endpoint": "/series/observations",
         "rate_limit_per_min": None,
-    },
+    }
 ]
+
+
+
+# Variables de entorno para API keys
+ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "")
+YAHOO_API_KEY = os.getenv("YAHOO_API_KEY", "")
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
+# Añade aquí más claves si las necesitas
+
+# Ruta base para guardar resultados (plots, datos, etc.)
+OUTPUTS_BASE_PATH = os.getenv("OUTPUTS_BASE_PATH", "outputs")
+
+# Formato de subcarpeta por fecha/hora
+OUTPUTS_DATE_FORMAT = "%Y-%m-%d_%H%M"
 
 
 def get_api_key(source_id: str):
@@ -180,4 +202,11 @@ __all__ = [
     "DATA_SOURCES",
     "get_api_key",
     "DEFAULTS",
+    "ALPHA_VANTAGE_API_KEY",
+    "YAHOO_API_KEY",
+    "FINNHUB_API_KEY",
+    "OUTPUTS_BASE_PATH",
+    "OUTPUTS_DATE_FORMAT",
+    "START_DATE",
+    "END_DATE",
 ]

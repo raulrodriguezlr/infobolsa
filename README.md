@@ -53,9 +53,27 @@ Ejecuta el programa principal:
 python src/main.py
 ```
 
+## Ejemplo de uso
+
+```sh
+# Configura tu .env con las API keys necesarias (ver .env.example)
+python src/main.py
+```
+
+- Los datos y gráficos se guardarán automáticamente en la carpeta `outputs/`.
+- Puedes cambiar los símbolos y parámetros en el archivo `main.py`.
+
 ## Diagrama de arquitectura
 
 Consulta el archivo `diagrams/architecture.fossflow` para ver la estructura general del proyecto.
+
+## Buenas prácticas aplicadas
+- Imports absolutos y estructura modular
+- Logging profesional en vez de print
+- Tipado y docstrings en funciones
+- Configuración centralizada en variables.py y .env
+- Tests unitarios en la carpeta `tests/`
+- Visualizaciones y outputs organizados por fecha
 
 ## Notas
 - El formato de salida de los extractores es estandarizado para facilitar el análisis y la interoperabilidad.
