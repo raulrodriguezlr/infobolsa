@@ -11,7 +11,9 @@ from src.extractors.stooq_extractor import StooqExtractor
 from src.extractors.finnhub_extractor import FinnhubExtractor
 from src.simulation.montecarlo import MonteCarloSimulator
 from src.utils.output_manager import OutputManager
-from src.variables import OUTPUTS_BASE_PATH, START_DATE, END_DATE, SYMBOLS 
+from src.variables import OUTPUTS_BASE_PATH, START_DATE, END_DATE, SYMBOLS
+from src.models.price_series import PriceSeries, PricePoint
+from src.models.portfolio import Portfolio 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
@@ -46,6 +48,9 @@ def main() -> None:
     # Suprimir todos los warnings (incluyendo DeprecationWarning y FutureWarning)
     warnings.filterwarnings("ignore")
 
+    # Lista para almacenar todas las PriceSeries y crear un Portfolio
+    all_price_series = []
+
     for symbol in SYMBOLS:
         logging.info(f"Descargando y mostrando datos de: {symbol}")
         try:
@@ -67,7 +72,6 @@ def main() -> None:
                 output_manager.save_plot(plt, f"{symbol}_historical_plot.png")
                 plt.show()
                 # --- Monte Carlo usando PriceSeries ---
-                from src.models.price_series import PriceSeries, PricePoint
                 # Convertir DataFrame a PriceSeries
                 price_points = []
                 for _, row in hist.iterrows():
@@ -80,6 +84,8 @@ def main() -> None:
                         volume=row['volume']
                     ))
                 ps = PriceSeries(symbol=symbol, currency="USD", data=price_points)
+                all_price_series.append(ps)  # Guardar para el Portfolio
+                
                 sim = MonteCarloSimulator(n_simulations=200, n_days=252)
                 simulations = sim.simulate_price_series(ps)
                 plt.figure(figsize=(10, 4))
@@ -93,6 +99,43 @@ def main() -> None:
         except Exception as e:
             logging.error(f"Error al obtener datos de {symbol}: {e}")
             continue
+    
+    # --- Análisis de Portfolio completo ---
+    if all_price_series:
+        logging.info("Creando Portfolio con todos los activos descargados...")
+        portfolio = Portfolio(
+            name="Portfolio de Infobolsa",
+            assets=all_price_series
+        )
+        
+        # Generar y guardar reporte
+        print("\n" + "="*60)
+        print("REPORTE DE CARTERA")
+        print("="*60 + "\n")
+        portfolio.report(show=True)
+        
+        # Guardar reporte en archivo
+        report_text = portfolio.report(show=False)
+        with open(output_manager.get_path("portfolio_report.md"), "w") as f:
+            f.write(report_text)
+        
+        # Simulación Monte Carlo de la cartera completa
+        logging.info("Ejecutando simulación Monte Carlo de la cartera completa...")
+        portfolio_sims = portfolio.monte_carlo_simulation(n_simulations=200, n_days=252)
+        
+        # Visualizar simulación de cartera
+        plt.figure(figsize=(12, 6))
+        for i in range(min(100, portfolio_sims.shape[0])):
+            plt.plot(portfolio_sims[i], color="purple", alpha=0.1)
+        plt.title("Portfolio - Simulación Monte Carlo (252 días)")
+        plt.xlabel("Días")
+        plt.ylabel("Valor total de la cartera")
+        plt.tight_layout()
+        output_manager.save_plot(plt, "portfolio_montecarlo.png")
+        plt.show()
+        
+        logging.info("Análisis de cartera completado y guardado.")
+    
     logging.info(f"Todos los datos y gráficos han sido guardados en la carpeta de outputs ({OUTPUTS_BASE_PATH}).")
 
 if __name__ == "__main__":

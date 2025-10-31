@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import List
 from .price_series import PriceSeries
 import statistics
-from simulation.montecarlo import MonteCarloSimulator
+from src.simulation.montecarlo import MonteCarloSimulator
 @dataclass
 class Portfolio:
     name: str

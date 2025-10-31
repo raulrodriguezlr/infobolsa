@@ -58,6 +58,8 @@ python src/main.py
 ```sh
 # Configura tu .env con las API keys necesarias (ver .env.example)
 python src/main.py
+# Si falla por rutas en los imports, situarse en la raiz del proyecto y 
+python -m src.main
 ```
 
 - Los datos y gráficos se guardarán automáticamente en la carpeta `outputs/`.
