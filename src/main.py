@@ -31,11 +31,14 @@ def main():
     Punto de entrada principal para Infobolsa Toolkit (Enriquecido).
     Descarga, muestra y guarda datos bursátiles enriquecidos y visualizaciones para una lista de símbolos.
     """
+
     interactive = '-i' in sys.argv or '--interactive' in sys.argv
     symbols = list(DEFAULT_SYMBOLS)
     plots_per_png = DEFAULT_PLOTS_PER_PNG
     include_mc_tickers = DEFAULT_INCLUDE_MONTECARLO_TICKERS
     use_adjusted_close = DEFAULT_USE_ADJUSTED_CLOSE
+    start_date = START_DATE
+    end_date = END_DATE
 
     print("\n" + "#"*70)
     print("INFOTBOLSA TOOLKIT - ANÁLISIS DE MERCADOS BURSÁTILES")
@@ -68,7 +71,7 @@ def main():
                 print("Por favor, responde 's' o 'n'.")
         print("\nConfiguración de visualización:")
         try:
-            plots_per_png = int(input(f"¿Cuántos gráficos por PNG? [por defecto {DEFAULT_PLOTS_PER_PNG}]: ") or DEFAULT_PLOTS_PER_PNG)
+            plots_per_png = int(input(f"¿Cuántos gráficos por PNG/pop-up? [por defecto {DEFAULT_PLOTS_PER_PNG}]: ") or DEFAULT_PLOTS_PER_PNG)
         except Exception:
             plots_per_png = DEFAULT_PLOTS_PER_PNG
         try:
@@ -87,11 +90,26 @@ def main():
                 use_adjusted_close = True
         except Exception:
             use_adjusted_close = DEFAULT_USE_ADJUSTED_CLOSE
+        # Elegir periodo
+        print("\nPeriodo de análisis:")
+        try:
+            start_date_in = input(f"Fecha de inicio (YYYYMMDD, por defecto {START_DATE.replace('-','')}): ").strip()
+            if start_date_in:
+                start_date = f"{start_date_in[:4]}-{start_date_in[4:6]}-{start_date_in[6:]}"
+        except Exception:
+            pass
+        try:
+            end_date_in = input(f"Fecha de fin (YYYYMMDD, por defecto {END_DATE.replace('-','')}): ").strip()
+            if end_date_in:
+                end_date = f"{end_date_in[:4]}-{end_date_in[4:6]}-{end_date_in[6:]}"
+        except Exception:
+            pass
         print("\nConfiguración final:")
         print("Tickers:", ', '.join(symbols))
-        print(f"Gráficos por PNG: {plots_per_png}")
+        print(f"Gráficos por PNG/pop-up: {plots_per_png}")
         print(f"Monte Carlo por ticker: {'Sí' if include_mc_tickers else 'No'}")
         print(f"Usar precios ajustados: {'Sí' if use_adjusted_close else 'No'}")
+        print(f"Periodo: {start_date} a {end_date}")
         print("\n" + "-"*70 + "\n")
     else:
         print("[MODO NO INTERACTIVO]")
@@ -116,77 +134,111 @@ def main():
     warnings.filterwarnings("ignore")
     all_price_series = []
 
-    for symbol in symbols:
-        print("\n" + "="*40)
-        print(f"Procesando símbolo: {symbol}")
-        print("="*40 + "\n")
-        logging.info(f"Descargando y mostrando datos de: {symbol}")
-        try:
-            if hasattr(extractor, 'get_all_data'):
-                result = extractor.get_all_data(symbol, start=START_DATE, end=END_DATE)
-                hist = result['historical'] if isinstance(result, dict) and 'historical' in result else result
-            else:
-                result = extractor.get_historical_prices(symbol, start=START_DATE, end=END_DATE)
-                hist = result['historical'] if isinstance(result, dict) and 'historical' in result else result
-            if isinstance(hist, pd.DataFrame) and not hist.empty:
-                print(f"\nDatos históricos para {symbol} (primeras 10 filas):\n")
-                print(hist.head(10))
-                plt.figure(figsize=(10, 4))
-                plt.plot(hist['date'], hist['close'], label=f"{symbol} Close")
-                plt.title(f"{symbol} - Precio histórico")
-                plt.xlabel("Fecha"); plt.ylabel("Precio")
-                plt.legend(); plt.tight_layout()
-                output_manager.save_plot(plt, f"{symbol}_historical_plot.png")
-                plt.show()
-                # --- Monte Carlo usando PriceSeries ---
-                price_points = []
-                for _, row in hist.iterrows():
-                    price_points.append(PricePoint(
+    # --- Procesamiento y visualización agrupada ---
+    import numpy as np
+    from math import ceil
+    def print_separator():
+        print("\n" + "="*80 + "\n")
+
+    def print_title(title):
+        print("\n" + "#"*40)
+        print(f"{title}")
+        print("#"*40 + "\n")
+
+    # Agrupar tickers para gráficos
+    n_groups = ceil(len(symbols) / plots_per_png)
+    symbol_groups = [symbols[i*plots_per_png:(i+1)*plots_per_png] for i in range(n_groups)]
+    all_price_series = []
+    all_hists = {}
+    for group in symbol_groups:
+        print_separator()
+        print_title(f"Gráficos para: {', '.join(group)}")
+        # --- Descargar y procesar datos de cada ticker del grupo ---
+        group_price_series = []
+        group_hists = {}
+        for symbol in group:
+            print_separator()
+            print_title(f"Procesando símbolo: {symbol}")
+            logging.info(f"Descargando y mostrando datos de: {symbol}")
+            try:
+                if hasattr(extractor, 'get_all_data'):
+                    result = extractor.get_all_data(symbol, start=start_date, end=end_date)
+                    hist = result['historical'] if isinstance(result, dict) and 'historical' in result else result
+                else:
+                    result = extractor.get_historical_prices(symbol, start=start_date, end=end_date)
+                    hist = result['historical'] if isinstance(result, dict) and 'historical' in result else result
+                if isinstance(hist, pd.DataFrame) and not hist.empty:
+                    # EDA: resumen estadístico
+                    print("\nResumen estadístico (describe):")
+                    print(hist.describe().T)
+                    print("\nDistribución de precios de cierre:")
+                    print(hist['close'].describe())
+                    # --- 10-K/10-Q (placeholder) ---
+                    print("\n[INFO] Descargando informes 10-K/10-Q (no implementado, placeholder)")
+                    # Aquí se podría integrar la descarga real de informes
+                    # --- Gráficos de precios y Monte Carlo agrupados ---
+                    group_hists[symbol] = hist
+                    price_points = [PricePoint(
                         date=row['date'],
                         open=row['open'],
                         high=row['high'],
                         low=row['low'],
                         close=row['close'],
                         volume=row['volume']
-                    ))
-                ps = PriceSeries(symbol=symbol, currency="USD", data=price_points)
-                all_price_series.append(ps)
-                if include_mc_tickers:
-                    sim = MonteCarloSimulator(n_simulations=200, n_days=252)
-                    simulations = sim.simulate_price_series(ps)
-                    plt.figure(figsize=(10, 4))
-                    for i in range(min(100, simulations.shape[0])):
-                        plt.plot(simulations[i], color="blue", alpha=0.1)
-                    plt.title(f"{symbol} - Simulación Monte Carlo (252 días)")
-                    plt.xlabel("Días"); plt.ylabel("Precio simulado")
-                    plt.tight_layout()
-                    output_manager.save_plot(plt, f"{symbol}_montecarlo_plot.png")
-                    plt.show()
-        except Exception as e:
-            print("\n" + "!"*60)
-            logging.error(f"Error al obtener datos de {symbol}: {e}")
-            print("!"*60 + "\n")
-            continue
+                    ) for _, row in hist.iterrows()]
+                    ps = PriceSeries(symbol=symbol, currency="USD", data=price_points)
+                    group_price_series.append(ps)
+                    all_price_series.append(ps)
+                else:
+                    print(f"No hay datos históricos para {symbol}.")
+            except Exception as e:
+                print("\n" + "!"*60)
+                logging.error(f"Error al obtener datos de {symbol}: {e}")
+                print("!"*60 + "\n")
+                continue
+        # --- Gráficos agrupados de precios históricos ---
+        if group_hists:
+            plt.figure(figsize=(6*len(group_hists), 4))
+            for idx, (symbol, hist) in enumerate(group_hists.items()):
+                plt.subplot(1, len(group_hists), idx+1)
+                plt.plot(hist['date'], hist['close'], label=f"{symbol} Close")
+                plt.title(f"{symbol} - Precio histórico")
+                plt.xlabel("Fecha"); plt.ylabel("Precio")
+                plt.legend(); plt.tight_layout()
+            output_manager.save_plot(plt, f"{'_'.join(group)}_historical_grouped.png")
+            plt.show()
+        # --- Gráficos agrupados de Monte Carlo ---
+        if include_mc_tickers and group_price_series:
+            plt.figure(figsize=(6*len(group_price_series), 4))
+            for idx, ps in enumerate(group_price_series):
+                sim = MonteCarloSimulator(n_simulations=200, n_days=252)
+                simulations = sim.simulate_price_series(ps)
+                plt.subplot(1, len(group_price_series), idx+1)
+                for i in range(min(100, simulations.shape[0])):
+                    plt.plot(simulations[i], color="blue", alpha=0.1)
+                plt.title(f"{ps.symbol} - Monte Carlo")
+                plt.xlabel("Días"); plt.ylabel("Precio simulado")
+                plt.tight_layout()
+            output_manager.save_plot(plt, f"{'_'.join([ps.symbol for ps in group_price_series])}_montecarlo_grouped.png")
+            plt.show()
+        all_hists.update(group_hists)
 
 
     # --- Análisis de Portfolio completo ---
     if all_price_series:
-        print("\n" + "#"*60)
+        print_separator()
+        print_title("REPORTE DE CARTERA")
         logging.info("Creando Portfolio con todos los activos descargados...")
         portfolio = Portfolio(
             name="Portfolio de Infobolsa",
             assets=all_price_series
         )
-        print("\n" + "="*60)
-        print("REPORTE DE CARTERA")
-        print("="*60 + "\n")
         portfolio.report(show=True)
         report_text = portfolio.report(show=False)
         with open(output_manager.get_path("portfolio_report.md"), "w") as f:
             f.write(report_text)
-        print("\n" + "-"*60)
-        print("Simulación Monte Carlo de la cartera completa...")
-        print("-"*60 + "\n")
+        print_separator()
+        print_title("Simulación Monte Carlo de la cartera completa")
         portfolio_sims = portfolio.monte_carlo_simulation(n_simulations=200, n_days=252)
         plt.figure(figsize=(12, 6))
         for i in range(min(100, portfolio_sims.shape[0])):
@@ -197,17 +249,12 @@ def main():
         plt.tight_layout()
         output_manager.save_plot(plt, "portfolio_montecarlo.png")
         plt.show()
-
-        # --- Matriz de correlación de precios de cierre ---
-        print("\n" + "-"*60)
-        print("Matriz de correlación de precios de cierre")
-        print("-"*60 + "\n")
+        print_separator()
+        print_title("Matriz de correlación de precios de cierre")
         # Construir DataFrame de precios de cierre
         close_data = {}
         for ps in all_price_series:
-            # ps.data es una lista de PricePoint
             close_data[ps.symbol] = [pp.close for pp in ps.data]
-        # Alinear longitudes (rellenar con NaN si es necesario)
         max_len = max(len(lst) for lst in close_data.values())
         for k in close_data:
             if len(close_data[k]) < max_len:
@@ -224,12 +271,11 @@ def main():
         plt.tight_layout()
         output_manager.save_plot(plt, "correlation_matrix.png")
         plt.show()
+        print_separator()
+        print_title("Análisis de cartera completado y guardado.")
 
-        print("\n" + "#"*60)
-        print("Análisis de cartera completado y guardado.")
-        print("#"*60 + "\n")
-
-    print(f"\nTodos los datos y gráficos han sido guardados en la carpeta de outputs ({OUTPUTS_BASE_PATH}).\n")
+    print_separator()
+    print(f"Todos los datos y gráficos han sido guardados en la carpeta de outputs ({OUTPUTS_BASE_PATH}).\n")
 
 # Entrypoint
 if __name__ == "__main__":
