@@ -2,23 +2,17 @@ from typing import Dict, List
 import os
 from dotenv import load_dotenv
 
-"""
-Variables y configuración comunes para los extractores de datos.
-
-Incluye:
-- Listado de fuentes de datos con sus metadatos (nombre, base_url, endpoints, nota sobre key)
-- Nombres de variables de entorno para las API keys
-- Constantes útiles (formato de fecha, días de mercado, timeouts, retries)
-- Función simple para obtener la API key desde las variables de entorno
-
-Este archivo pretende centralizar la configuración para facilitar añadir nuevos extractores
-sin repetir constantes por todo el proyecto.
-"""
+# ======================
+# CONFIGURACIÓN GENERAL
+# ======================
+# Todas las variables aquí deben ser fáciles de entender para cualquier usuario.
+# Si tienes dudas, revisa el README o pregunta a tu equipo.
 
 
-# Fechas globales para extracción de datos
-START_DATE = os.getenv("START_DATE", "2022-01-01")
-END_DATE = os.getenv("END_DATE", "2023-12-31")
+
+# Fechas para extracción de datos
+START_DATE = os.getenv("START_DATE", "2022-01-01")  # Fecha de inicio (YYYY-MM-DD)
+END_DATE = os.getenv("END_DATE", "2023-12-31")      # Fecha de fin (YYYY-MM-DD)
 
 load_dotenv()
 
@@ -28,8 +22,22 @@ DEFAULT_DATE_FORMAT = "%Y-%m-%d"
 DEFAULT_CURRENCY = "USD"
 REQUEST_TIMEOUT = 10  # segundos
 REQUEST_RETRIES = 3
-REQUEST_BACKOFF_FACTOR = 0.3  # usado si se implementa retry
+REQUEST_BACKOFF_FACTOR = 0.3
+
+# ======================
+# VARIABLES PRINCIPALES
+# ======================
+# Lista de símbolos/tickers de la cartera (puedes modificarla en modo interactivo)
 SYMBOLS = ["AAPL", "MSFT"]
+
+# Número máximo de gráficos por archivo PNG (por ejemplo, 4 = 4 gráficos juntos)
+PLOTS_PER_PNG = 4
+
+# ¿Incluir simulación Monte Carlo para cada ticker individual? (True/False)
+INCLUDE_MONTECARLO_TICKERS = True
+
+# ¿Usar precios ajustados (adjusted close)? (True/False)
+USE_ADJUSTED_CLOSE = True
 # Nombres de variables de entorno para API keys
 API_ENV_VARS = {
     "ALPHAVANTAGE": "ALPHAVANTAGE_API_KEY",
@@ -156,9 +164,8 @@ YAHOO_API_KEY = os.getenv("YAHOO_API_KEY", "")
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 # Añade aquí más claves si las necesitas
 
-# Ruta base para guardar resultados (plots, datos, etc.)
+# Carpeta donde se guardan los resultados (gráficos, datos, etc.)
 OUTPUTS_BASE_PATH = os.getenv("OUTPUTS_BASE_PATH", "outputs")
-
 # Formato de subcarpeta por fecha/hora
 OUTPUTS_DATE_FORMAT = "%Y-%m-%d_%H%M"
 
@@ -209,4 +216,8 @@ __all__ = [
     "OUTPUTS_DATE_FORMAT",
     "START_DATE",
     "END_DATE",
+    "SYMBOLS",
+    "PLOTS_PER_PNG",
+    "INCLUDE_MONTECARLO_TICKERS",
+    "USE_ADJUSTED_CLOSE",
 ]
