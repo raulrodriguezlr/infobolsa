@@ -28,7 +28,7 @@ REQUEST_BACKOFF_FACTOR = 0.3
 # VARIABLES PRINCIPALES
 # ======================
 # Lista de símbolos/tickers de la cartera (puedes modificarla en modo interactivo)
-SYMBOLS = ["AAPL", "MSFT"]
+SYMBOLS = ["AAPL", "MSFT","NFLX","DIS"]
 
 # Número máximo de gráficos por archivo PNG (por ejemplo, 4 = 4 gráficos juntos)
 PLOTS_PER_PNG = 4

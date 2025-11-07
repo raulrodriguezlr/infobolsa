@@ -1,0 +1,136 @@
+{
+    "meta": {
+      "name": "Infobolsa Architecture",
+      "description": "Diagrama de flujo y jerarquía de clases del proyecto Infobolsa",
+      "createdWith": "GPT-5 Codex"
+    },
+    "nodes": [
+      {
+        "id": "main",
+        "name": "CLI Entrypoint",
+        "details": "src/main.py",
+        "type": "app",
+        "position": { "x": 100, "y": 160 }
+      },
+      {
+        "id": "extractors",
+        "name": "Extractors",
+        "details": "src/extractors/",
+        "type": "service",
+        "position": { "x": 300, "y": 40 }
+      },
+      {
+        "id": "yahoo_enriched",
+        "name": "YahooEnrichedExtractor",
+        "details": "yahoo_enriched.py",
+        "type": "service",
+        "position": { "x": 520, "y": 0 }
+      },
+      {
+        "id": "yahoo_basic",
+        "name": "YahooFinanceExtractor",
+        "details": "yahoo_extractor.py",
+        "type": "service",
+        "position": { "x": 520, "y": 60 }
+      },
+      {
+        "id": "alpha_vantage",
+        "name": "AlphaVantageExtractor",
+        "details": "alpha_vantage_extractor.py",
+        "type": "service",
+        "position": { "x": 520, "y": 120 }
+      },
+      {
+        "id": "finnhub",
+        "name": "FinnhubExtractor",
+        "details": "finnhub_extractor.py",
+        "type": "service",
+        "position": { "x": 520, "y": 180 }
+      },
+      {
+        "id": "models",
+        "name": "Domain Models",
+        "details": "src/models/",
+        "type": "component",
+        "position": { "x": 300, "y": 180 }
+      },
+      {
+        "id": "price_series",
+        "name": "PriceSeries & PricePoint",
+        "details": "price_series.py",
+        "type": "component",
+        "position": { "x": 520, "y": 240 }
+      },
+      {
+        "id": "portfolio",
+        "name": "Portfolio",
+        "details": "portfolio.py",
+        "type": "component",
+        "position": { "x": 520, "y": 300 }
+      },
+      {
+        "id": "simulation",
+        "name": "MonteCarloSimulator",
+        "details": "simulation/montecarlo.py",
+        "type": "process",
+        "position": { "x": 300, "y": 300 }
+      },
+      {
+        "id": "visualizations",
+        "name": "Visualizations",
+        "details": "visualizations/plots.py",
+        "type": "ui",
+        "position": { "x": 780, "y": 220 }
+      },
+      {
+        "id": "utils",
+        "name": "Utilities",
+        "details": "utils/",
+        "type": "tool",
+        "position": { "x": 100, "y": 300 }
+      },
+      {
+        "id": "output_manager",
+        "name": "OutputManager",
+        "details": "utils/output_manager.py",
+        "type": "tool",
+        "position": { "x": 300, "y": 360 }
+      },
+      {
+        "id": "data_cleaning",
+        "name": "DataCleaning",
+        "details": "utils/data_cleaning.py",
+        "type": "tool",
+        "position": { "x": 300, "y": 420 }
+      },
+      {
+        "id": "reports",
+        "name": "Portfolio Reports",
+        "details": "outputs/*.md, *.png",
+        "type": "document",
+        "position": { "x": 780, "y": 320 }
+      }
+    ],
+    "connectors": [
+      { "id": "c_main_extractors", "from": "main", "to": "extractors", "type": "line", "label": "Selecciona extractor" },
+      { "id": "c_main_models", "from": "main", "to": "models", "type": "line", "label": "Instancia modelos" },
+      { "id": "c_main_utils", "from": "main", "to": "utils", "type": "line", "label": "Gestión de salida y limpieza" },
+      { "id": "c_main_simulation", "from": "main", "to": "simulation", "type": "line", "label": "Ejecuta Monte Carlo" },
+      { "id": "c_main_visualizations", "from": "main", "to": "visualizations", "type": "line", "label": "Genera plots" },
+      { "id": "c_extractors_yahoo_enriched", "from": "extractors", "to": "yahoo_enriched", "type": "line" },
+      { "id": "c_extractors_yahoo_basic", "from": "extractors", "to": "yahoo_basic", "type": "line" },
+      { "id": "c_extractors_alpha_vantage", "from": "extractors", "to": "alpha_vantage", "type": "line" },
+      { "id": "c_extractors_finnhub", "from": "extractors", "to": "finnhub", "type": "line" },
+      { "id": "c_extractors_models", "from": "extractors", "to": "models", "type": "line", "label": "Devuelve series de precios" },
+      { "id": "c_extractors_utils", "from": "extractors", "to": "utils", "type": "line", "label": "Normaliza datos" },
+      { "id": "c_models_price_series", "from": "models", "to": "price_series", "type": "line" },
+      { "id": "c_models_portfolio", "from": "models", "to": "portfolio", "type": "line" },
+      { "id": "c_models_simulation", "from": "models", "to": "simulation", "type": "line", "label": "Entradas de Monte Carlo" },
+      { "id": "c_simulation_visualizations", "from": "simulation", "to": "visualizations", "type": "line", "label": "Trayectorias simuladas" },
+      { "id": "c_portfolio_visualizations", "from": "portfolio", "to": "visualizations", "type": "line", "label": "Métricas de cartera" },
+      { "id": "c_visualizations_reports", "from": "visualizations", "to": "reports", "type": "line", "label": "PNG/plots" },
+      { "id": "c_portfolio_reports", "from": "portfolio", "to": "reports", "type": "line", "label": "Informe Markdown" },
+      { "id": "c_utils_output_manager", "from": "utils", "to": "output_manager", "type": "line" },
+      { "id": "c_utils_data_cleaning", "from": "utils", "to": "data_cleaning", "type": "line" }
+    ]
+  }
