@@ -1,4 +1,4 @@
-# Infobolsa Toolkit
+![Infobolsa Toolkit](docs/diagram.png)
 
 Infobolsa Toolkit es un conjunto de utilidades para descargar, enriquecer y analizar series bursátiles desde múltiples APIs públicas. El proyecto automatiza la recopilación de precios históricos, genera simulaciones de Monte Carlo y produce reportes y visualizaciones listos para presentar.
 
