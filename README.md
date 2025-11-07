@@ -215,25 +215,4 @@ python -m pytest tests/ -v -s
 
 Desarrollado por Raul R.
 
----
 
-```mermaid
-flowchart TD
-    Start([Inicio: main.py])
-    Extractor[Descarga de datos\n(Extractors)]
-    PriceSeries[Normalización\n(PriceSeries)]
-    Portfolio[Cartera\n(Portfolio)]
-    Simulacion[Simulación Monte Carlo\n(MonteCarloSimulator)]
-    Reporte[Reporte y Análisis\n(Portfolio.report)]
-    Plots[Visualización\n(Matplotlib)]
-    Salida[Salidas: Markdown, Gráficos, Consola]
-
-    Start --> Extractor
-    Extractor --> PriceSeries
-    PriceSeries --> Portfolio
-    Portfolio --> Simulacion
-    Simulacion --> Plots
-    Portfolio --> Reporte
-    Reporte --> Salida
-    Plots --> Salida
-```
