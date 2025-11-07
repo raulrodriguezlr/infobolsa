@@ -1,5 +1,3 @@
-
-# Entry point for infobolsa toolkit
 import sys
 import logging
 import pandas as pd
@@ -8,30 +6,27 @@ import warnings
 from src.extractors.yahoo_enriched import YahooEnrichedExtractor
 from src.extractors.yahoo_extractor import YahooFinanceExtractor
 from src.extractors.alpha_vantage_extractor import AlphaVantageExtractor
-from src.extractors.stooq_extractor import StooqExtractor
 from src.extractors.finnhub_extractor import FinnhubExtractor
 from src.simulation.montecarlo import MonteCarloSimulator
 from src.utils.output_manager import OutputManager
 from src.variables import OUTPUTS_BASE_PATH, START_DATE, END_DATE, SYMBOLS as DEFAULT_SYMBOLS, PLOTS_PER_PNG as DEFAULT_PLOTS_PER_PNG, INCLUDE_MONTECARLO_TICKERS as DEFAULT_INCLUDE_MONTECARLO_TICKERS, USE_ADJUSTED_CLOSE as DEFAULT_USE_ADJUSTED_CLOSE
 from src.models.price_series import PriceSeries, PricePoint
 from src.models.portfolio import Portfolio
-
+import numpy as np
+from math import ceil
+import requests
+from src.variables import CIK
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
 EXTRACTORS = [
     ("Yahoo Finance (enriquecido)", YahooEnrichedExtractor),
     ("Yahoo Finance (básico)", YahooFinanceExtractor),
     ("Alpha Vantage", AlphaVantageExtractor),
-    ("Stooq", StooqExtractor),
     ("Finnhub", FinnhubExtractor)
 ]
 
 def main():
-    """
-    Punto de entrada principal para Infobolsa Toolkit (Enriquecido).
-    Descarga, muestra y guarda datos bursátiles enriquecidos y visualizaciones para una lista de símbolos.
-    """
-
+    
     interactive = '-i' in sys.argv or '--interactive' in sys.argv
     symbols = list(DEFAULT_SYMBOLS)
     plots_per_png = DEFAULT_PLOTS_PER_PNG
@@ -39,6 +34,12 @@ def main():
     use_adjusted_close = DEFAULT_USE_ADJUSTED_CLOSE
     start_date = START_DATE
     end_date = END_DATE
+    # --- Prueba sencilla: extraer y mostrar datos con AlphaVantageExtractor ---
+    """
+    Punto de entrada principal para Infobolsa Toolkit (Enriquecido).
+    Descarga, muestra y guarda datos bursátiles enriquecidos y visualizaciones para una lista de símbolos.
+    """
+
 
     print("\n" + "#"*70)
     print("INFOTBOLSA TOOLKIT - ANÁLISIS DE MERCADOS BURSÁTILES")
@@ -134,16 +135,6 @@ def main():
     warnings.filterwarnings("ignore")
     all_price_series = []
 
-    # --- Procesamiento y visualización agrupada ---
-    import numpy as np
-    from math import ceil
-    def print_separator():
-        print("\n" + "="*80 + "\n")
-
-    def print_title(title):
-        print("\n" + "#"*40)
-        print(f"{title}")
-        print("#"*40 + "\n")
 
     # Agrupar tickers para gráficos
     n_groups = ceil(len(symbols) / plots_per_png)
@@ -168,14 +159,35 @@ def main():
                     result = extractor.get_historical_prices(symbol, start=start_date, end=end_date)
                     hist = result['historical'] if isinstance(result, dict) and 'historical' in result else result
                 if isinstance(hist, pd.DataFrame) and not hist.empty:
+                    # Mostrar columnas y primeras filas para depuración
+                    print(f"[INFO] Columnas recibidas para {symbol}: {list(hist.columns)}")
+                    print(f"[INFO] Primeras y ultimas filas para {symbol}:")
+                    print(hist.head(10))
+                    print("....../n")
+                    print(hist.tail(10))
+                    # Adaptar formato si falta 'date'
+                    if 'date' not in hist.columns:
+                        # Buscar columna de fecha alternativa
+                        date_col = None
+                        for col in hist.columns:
+                            if col.lower() in ['timestamp', 'datetime', 'fecha']:
+                                date_col = col
+                                break
+                        if date_col:
+                            hist = hist.rename(columns={date_col: 'date'})
+                        else:
+                            print(f"[ERROR] El DataFrame de {symbol} no tiene columna 'date'. Columnas encontradas: {list(hist.columns)}")
+                            continue
                     # EDA: resumen estadístico
                     print("\nResumen estadístico (describe):")
                     print(hist.describe().T)
                     print("\nDistribución de precios de cierre:")
-                    print(hist['close'].describe())
-                    # --- 10-K/10-Q (placeholder) ---
-                    print("\n[INFO] Descargando informes 10-K/10-Q (no implementado, placeholder)")
-                    # Aquí se podría integrar la descarga real de informes
+                    print(hist['close'].describe()) 
+                    #Si tienes CIK, descarga informes 10-K y 10-Q desde SEC EDGAR, descomenta esto
+                    #print(f"\n[INFO] Descargando informes 10-K y 10-Q desde SEC EDGAR para {symbol}...")
+                    #fetch_sec_filings(symbol, "10-K")
+                    #fetch_sec_filings(symbol, "10-Q")
+
                     # --- Gráficos de precios y Monte Carlo agrupados ---
                     group_hists[symbol] = hist
                     price_points = [PricePoint(
@@ -238,7 +250,6 @@ def main():
         with open(output_manager.get_path("portfolio_report.md"), "w") as f:
             f.write(report_text)
         print_separator()
-        print_title("Simulación Monte Carlo de la cartera completa")
         portfolio_sims = portfolio.monte_carlo_simulation(n_simulations=200, n_days=252)
         plt.figure(figsize=(12, 6))
         for i in range(min(100, portfolio_sims.shape[0])):
@@ -276,6 +287,56 @@ def main():
 
     print_separator()
     print(f"Todos los datos y gráficos han sido guardados en la carpeta de outputs ({OUTPUTS_BASE_PATH}).\n")
+
+
+def fetch_sec_filings(ticker, form_type):
+    # form_type: '10-K' or '10-Q'
+    # Buscar CIK del ticker
+    cik_url = "https://www.sec.gov/files/company_tickers_exchange.json"
+    try:
+        cik_resp = requests.get(cik_url)
+        cik_data = cik_resp.json()
+        cik = CIK
+        for entry in cik_data.values():
+            if entry.get('ticker', '').upper() == ticker.upper():
+                cik = entry.get('cik_str')
+                break
+        if not cik:
+            print(f"[INFO] No se encontró CIK para {ticker} en SEC.")
+            return
+    except Exception as e:
+        print(f"[ERROR] Descarga CIK para {ticker}: {e}")
+        return
+    # Buscar los últimos filings del tipo solicitado
+    search_url = f"https://data.sec.gov/submissions/CIK{str(cik).zfill(10)}.json"
+    try:
+        filings_resp = requests.get(search_url, headers={"User-Agent": "infobolsa/1.0"})
+        filings_data = filings_resp.json()
+        filings = filings_data.get('filings', {}).get('recent', {})
+        forms = filings.get('form', [])
+        accession_numbers = filings.get('accessionNumber', [])
+        report_links = []
+        for i, form in enumerate(forms):
+            if form == form_type:
+                acc_num = accession_numbers[i].replace('-', '')
+                link = f"https://www.sec.gov/Archives/edgar/data/{cik}/{acc_num}/{accession_numbers[i]}.txt"
+                report_links.append(link)
+        if report_links:
+            print(f"[INFO] Últimos {form_type} para {ticker}:")
+            for l in report_links[:2]:
+                print(f"- {l}")
+        else:
+            print(f"[INFO] No se encontró {form_type} reciente para {ticker} en SEC.")
+    except Exception as e:
+        print(f"[ERROR] Descarga filings SEC para {ticker}: {e}")
+
+def print_separator():
+    print("\n" + "="*80 + "\n")
+
+def print_title(title):
+    print("\n" + "#"*40)
+    print(f"{title}")
+    print("#"*40 + "\n")
 
 # Entrypoint
 if __name__ == "__main__":

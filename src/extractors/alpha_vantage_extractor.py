@@ -1,3 +1,4 @@
+
 import pandas as pd
 import requests
 from .base import BaseExtractor
@@ -12,7 +13,7 @@ class AlphaVantageExtractor(BaseExtractor):
 
     def get_historical_prices(self, ticker: str, start: str, end: str) -> pd.DataFrame:
         params = {
-            "function": "TIME_SERIES_DAILY_ADJUSTED",
+            "function": "TIME_SERIES_DAILY",
             "symbol": ticker,
             "outputsize": "full",
             "apikey": ALPHA_VANTAGE_API_KEY
@@ -27,7 +28,7 @@ class AlphaVantageExtractor(BaseExtractor):
                 "high": float(values["2. high"]),
                 "low": float(values["3. low"]),
                 "close": float(values["4. close"]),
-                "volume": float(values["6. volume"]),
+                "volume": float(values["5. volume"]),
                 "ticker": ticker
             })
         df = pd.DataFrame(rows)

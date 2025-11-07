@@ -1,3 +1,4 @@
+
 import pandas as pd
 import requests
 from .base import BaseExtractor
@@ -14,8 +15,8 @@ class FinnhubExtractor(BaseExtractor):
         params = {
             'symbol': ticker,
             'resolution': 'D',
-            'from': pd.Timestamp(start).timestamp(),
-            'to': pd.Timestamp(end).timestamp(),
+            'from': int(pd.Timestamp(start).timestamp()),
+            'to': int(pd.Timestamp(end).timestamp()),
             'token': FINNHUB_API_KEY
         }
         response = requests.get(self.BASE_URL, params=params)

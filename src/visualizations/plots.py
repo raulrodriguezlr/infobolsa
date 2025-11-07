@@ -4,16 +4,16 @@ from src.utils.output_manager import OutputManager
 output_manager = OutputManager()
 
 def plot_price_series(price_series, show=True):
-    dates = price_series.data['date'] if hasattr(price_series, 'data') else [p.date for p in price_series.data]
-    closes = price_series.data['close'] if hasattr(price_series, 'data') else [p.close for p in price_series.data]
+    dates = [p.date for p in price_series.data]
+    closes = [p.close for p in price_series.data]
     plt.figure(figsize=(10, 4))
-    plt.plot(dates, closes, label=price_series.ticker if hasattr(price_series, 'ticker') else price_series.symbol)
-    plt.title(f"Precio histórico: {getattr(price_series, 'ticker', getattr(price_series, 'symbol', ''))}")
+    plt.plot(dates, closes, label=price_series.symbol)
+    plt.title(f"Precio histórico: {price_series.symbol}")
     plt.xlabel("Fecha")
     plt.ylabel("Precio")
     plt.legend()
     plt.tight_layout()
-    filename = f"{getattr(price_series, 'ticker', getattr(price_series, 'symbol', ''))}_historical_plot.png"
+    filename = f"{price_series.symbol}_historical_plot.png"
     output_manager.save_plot(plt, filename)
     if show:
         plt.show()

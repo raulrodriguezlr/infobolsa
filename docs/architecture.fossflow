@@ -1,0 +1,15 @@
+# FossFLOW diagram for Infobolsa project
+# See https://github.com/stan-smith/FossFLOW for syntax
+
+[main.py] --> [extractors]
+[main.py] --> [models]
+[main.py] --> [simulation]
+[main.py] --> [utils]
+[main.py] --> [visualizations]
+[extractors] --> [models]
+[extractors] --> [utils]
+[models] --> [simulation]
+[models] --> [visualizations]
+[simulation] --> [visualizations]
+[models] --> [portfolio]
+[portfolio] --> [report]
